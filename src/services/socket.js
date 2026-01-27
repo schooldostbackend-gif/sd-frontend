@@ -1,7 +1,9 @@
 // Socket Service - Real-time connection
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+// Derive Socket URL from API URL if not explicitly set
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_URL.replace('/api', '');
 
 let socket = null;
 
