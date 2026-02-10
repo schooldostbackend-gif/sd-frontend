@@ -7,21 +7,35 @@ const SOCKET_URL = import.meta.env.MODE === 'production'
     : 'http://localhost:5000';
 
 let socket = null;
+let isIntentionalDisconnect = false;
 
 export const connectSocket = (token) => {
-    if (socket?.connected) return socket;
+    // If socket exists and is connected or connecting, return it
+    if (socket && socket.connected) return socket;
+    
+    // If socket exists but disconnected, try reconnecting
+    if (socket) {
+        socket.auth = { token };
+        socket.connect();
+        return socket;
+    }
 
     socket = io(SOCKET_URL, {
         auth: { token },
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
     });
 
     socket.on('connect', () => {
         console.log('🔌 Socket connected');
     });
 
-    socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected');
+    socket.on('disconnect', (reason) => {
+        if (!isIntentionalDisconnect) {
+            console.log('❌ Socket disconnected:', reason);
+        }
     });
 
     socket.on('connect_error', (error) => {
@@ -33,8 +47,10 @@ export const connectSocket = (token) => {
 
 export const disconnectSocket = () => {
     if (socket) {
+        isIntentionalDisconnect = true;
         socket.disconnect();
         socket = null;
+        isIntentionalDisconnect = false;
     }
 };
 
